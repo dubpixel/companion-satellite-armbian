@@ -15,8 +15,8 @@ on:
     inputs:
       satellite-build:
         type: string
-        description: Companion Version
-        default: "v1.9.1"
+        description: Companion Version (tag like v2.6.0, or 'latest')
+        default: "latest"
         required: true
 
       armbian-board:
@@ -275,6 +275,19 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Resolve satellite version
+        id: resolve-version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          input="${{ inputs.satellite-build }}"
+          if [[ "$input" == "latest" || -z "$input" ]]; then
+            version=$(gh api /repos/bitfocus/companion-satellite/releases/latest --jq '.tag_name')
+          else
+            version="$input"
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+
       - name: Install qemu-user-static
         run: sudo apt install -y qemu-user-static
 
@@ -282,7 +295,7 @@ jobs:
         run: |
           git clone --depth=1 --branch=main https://github.com/armbian/build
           ./build/compile.sh build \
-          BOARD=${{ github.event.inputs.armbian-board }} \
+          BOARD=${{ inputs.armbian-board }} \
           BRANCH=current \
           RELEASE=noble \
           BUILD_MINIMAL=yes \
@@ -301,7 +314,7 @@ jobs:
       - name: build image
         run: |
           sudo packer init companion-satellite.pkr.hcl
-          sudo packer build -var "url=build/output/images/armbian.img" -var "build=${{ github.event.inputs.satellite-build }}" companion-satellite.pkr.hcl
+          sudo packer build -var "url=build/output/images/armbian.img" -var "build=${{ steps.resolve-version.outputs.version }}" companion-satellite.pkr.hcl
         env:
           PACKER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -316,12 +329,12 @@ jobs:
           sudo losetup --detach "$device"
 
           sudo gzip -n armbian-companion-satellite.img
-          targetname=${{ github.event.inputs.armbian-board }}-companion-satellite-${{ github.event.inputs.satellite-build }}.img.gz
+          targetname=${{ inputs.armbian-board }}-companion-satellite-${{ steps.resolve-version.outputs.version }}.img.gz
           echo $targetname
           sudo mv armbian-companion-satellite.img.gz ${targetname}
 
       - name: Upload Armbian image
         uses: actions/upload-artifact@v6
         with:
-          name: "armbian-${{ github.event.inputs.armbian-board }}-companion-satellite-${{ github.event.inputs.satellite-build }}"
-          path: output-satellitepi/${{ github.event.inputs.armbian-board }}-companion-satellite-${{ github.event.inputs.satellite-build }}.img.gz
+          name: "armbian-${{ inputs.armbian-board }}-companion-satellite-${{ steps.resolve-version.outputs.version }}"
+          path: output-satellitepi/${{ inputs.armbian-board }}-companion-satellite-${{ steps.resolve-version.outputs.version }}.img.gz

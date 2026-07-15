@@ -21,16 +21,24 @@ jobs:
           title="${{ github.event.pull_request.title }}"
           version="${title##* }"
           echo "satellite_version=$version" >> $GITHUB_OUTPUT
-  build-matrix:
+
+  generate-matrix:
     needs: get-satellite-version
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+      - name: Read release-boards.json
+        id: set-matrix
+        run: echo "matrix=$(cat .github/release-boards.json)" >> $GITHUB_OUTPUT
+
+  build-matrix:
+    needs: [get-satellite-version, generate-matrix]
+    runs-on: ubuntu-latest
     strategy:
-      matrix:
-        armbian-board:
-          - orangepizero
-          - orangepizero2
-          - orangepizero2w
-          - orangepizero3
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -43,7 +51,7 @@ jobs:
           armbian-board: ${{ matrix.armbian-board }}
           satellite-build: ${{ needs.get-satellite-version.outputs.satellite_version }}
   build-release:
-    needs: build-matrix
+    needs: [get-satellite-version, build-matrix]
     runs-on: ubuntu-latest
     steps:
       - name: Download Built Artifacts
