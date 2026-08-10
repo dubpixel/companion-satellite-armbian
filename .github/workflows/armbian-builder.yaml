@@ -271,7 +271,7 @@ jobs:
     name: Build Armbian
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           submodules: "true"
 
@@ -334,7 +334,8 @@ jobs:
           sudo mv armbian-companion-satellite.img.gz ${targetname}
 
       - name: Upload Armbian image
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: "armbian-${{ inputs.armbian-board }}-companion-satellite-${{ steps.resolve-version.outputs.version }}"
+          retention-days: 3
           path: output-satellitepi/${{ inputs.armbian-board }}-companion-satellite-${{ steps.resolve-version.outputs.version }}.img.gz
