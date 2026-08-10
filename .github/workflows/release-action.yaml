@@ -29,7 +29,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Read release-boards.json
         id: set-matrix
         run: echo "matrix=$(cat .github/release-boards.json)" >> $GITHUB_OUTPUT
@@ -41,7 +41,7 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: "true"
       - name: Call Armbian Builder Workflow
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Built Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: "armbian-*"
           merge-multiple: true
