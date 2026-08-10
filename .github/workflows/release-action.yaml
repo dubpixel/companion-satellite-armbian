@@ -29,7 +29,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
       - name: Read release-boards.json
         id: set-matrix
         run: echo "matrix=$(cat .github/release-boards.json)" >> $GITHUB_OUTPUT
@@ -41,7 +41,7 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           submodules: "true"
       - name: Call Armbian Builder Workflow
@@ -53,9 +53,11 @@ jobs:
   build-release:
     needs: [get-satellite-version, build-matrix]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download Built Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           pattern: "armbian-*"
           merge-multiple: true
@@ -66,6 +68,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: "companion-update-${{ needs.get-satellite-version.outputs.satellite_version }}"
-          release_name: "Companion Satellite Update ${{ needs.get-satellite-version.outputs.satellite_version }}"
+          name: "Companion Satellite Update ${{ needs.get-satellite-version.outputs.satellite_version }}"
           artifacts: ./artifacts/*
           generateReleaseNotes: true
